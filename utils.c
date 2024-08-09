@@ -12,51 +12,57 @@
 
 #include "philo.h"
 
-int	ft_free(t_var *var, int i)
+int	ft_free(t_philo *philo, t_data *data, int ret)
 {
-	if (i == -1)
-	{
-		free(var->death);
-		return (1);
-	}
-	if (i == -2)
-	{
-		free(var->death);
-		free(var->fork);
-		return (1);
-	}
-	free(var->death);
-	free(var->fork);
+	if (data && data->mutex)
+		free(data->mutex);
+	if (data)
+		free(data);
+	if (philo && philo->fork)
+		free(philo->fork);
+	if (philo)
+		free(philo);
+	return (ret);
+}
+
+int	ft_eating(t_philo *p)
+{
+	if (ft_getforks(p) != 1)
+		return (0);
+	pthread_mutex_lock(&p->data->mutex[MTX_MEALS]);
+	p->last_meal = ft_gettime();
+	p->meal_count++;
+	pthread_mutex_unlock(&p->data->mutex[MTX_MEALS]);
+	if (ft_isdone(p))
+		return (ft_dropforks(p), 0);
+	usleep(p->data->t_meal * 1000);
+	ft_dropforks(p);
 	return (1);
 }
 
-void	print_state(t_philo *p, char *action)
+void	ft_died(t_data *data)
 {
-	pthread_mutex_lock(p->var->death);
-	if (p->var->end)
-	{
-		pthread_mutex_unlock(p->var->death);
-		return ;
-	}
-	printf("%ld %d %s\n", current_time() - p->start,
-		p->num, action);
-	pthread_mutex_unlock(p->var->death);
+	pthread_mutex_lock(&data->mutex[MTX_DIED]);
+	data->died = 1;
+	pthread_mutex_unlock(&data->mutex[MTX_DIED]);
 }
 
-long int	current_time(void)
+t_msec	ft_gettime(void)
 {
-	struct timeval	now;
+	t_time	t;
 
-	gettimeofday(&now, NULL);
-	return ((now.tv_sec * 1000) + (now.tv_usec / 1000));
+	if (gettimeofday(&t, NULL) == -1)
+		return (0);
+	return ((t.tv_sec * 1000) + (t.tv_usec / 1000));
 }
 
-int	ft_usleep(long int time)
+void	ft_log(t_philo *p, char *str)
 {
-	long int	start_time;
+	t_msec	time;
 
-	start_time = current_time();
-	while ((current_time() - start_time) < time)
-		usleep(1000);
-	return (1);
+	time = ft_gettime() - p->data->t_start;
+	pthread_mutex_lock(&p->data->mutex[MTX_PRINTF]);
+	if (((!ft_isdead(p)) && (!ft_isdone(p))) || (*str == 'd'))
+		printf("%3lld %3d %s\n", time, p->id, str);
+	pthread_mutex_unlock(&p->data->mutex[MTX_PRINTF]);
 }

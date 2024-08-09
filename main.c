@@ -12,94 +12,106 @@
 
 #include "philo.h"
 
-int	ft_atoi(const char *str)
-{
-	int		i;
-	int		sign;
-	long	nbr;
-
-	i = 0;
-	sign = 1;
-	nbr = 0;
-	while ((str[i] > 8 && str[i] < 14) || str[i] == ' ')
-		i++;
-	if (str[i] == '+' || str[i] == '-')
-	{
-		if (str[i] == '-')
-			sign *= -1;
-		i++;
-	}
-	while (str[i] >= '0' && str[i] <= '9')
-	{
-		nbr *= 10;
-		nbr = nbr + str[i] - '0';
-		i++;
-	}
-	return (nbr * sign);
-}
-
-int	init_mutex(t_var *var)
+void	ft_kill_mtx(t_philo *philo)
 {
 	int	i;
 
-	i = -1;
-	var->death = 0;
-	var->fork = 0;
-	var->death = malloc(sizeof(pthread_mutex_t));
-	if (!var->death)
-		return (1);
-	var->fork = malloc(sizeof(pthread_mutex_t) * var->nb);
-	if (!var->fork)
-		return (ft_free(var, -1));
-	if (pthread_mutex_init(var->death, NULL) == -1)
-		return (ft_free(var, -2));
-	while (++i < var->nb)
-		if (pthread_mutex_init(&var->fork[i], NULL) == -1)
-			return (ft_free(var, 0));
-	return (0);
+	i = 0;
+	while (i < philo->data->n_philos)
+		pthread_mutex_destroy(&philo->fork[i++]);
+	i = 0;
+	while (i < MTX_NUM)
+		pthread_mutex_destroy(&philo->data->mutex[i++]);
 }
 
-int	init(t_var *var, int argc, char **argv)
+int	ft_monitor(t_philo *philo, t_data *data, int i)
 {
-	var->nb = ft_atoi(argv[1]);
-	var->t2d = ft_atoi(argv[2]);
-	var->t2e = ft_atoi(argv[3]);
-	var->t2s = ft_atoi(argv[4]);
-	var->max = 100;
-	if (argc == 6)
-		var->max = ft_atoi(argv[5]);
-	var->end = 0;
-	if (init_mutex(var))
-		return (1);
-	return (0);
-}
+	t_msec			l_meal;
 
-int	death(t_philo *p)
-{
-	print_state(p, DIED);
-	p->var->end = 1;
-	p->dead = 1;
-	pthread_mutex_unlock(p->left_fork);
-	pthread_mutex_unlock(p->right_fork);
+	while (1)
+	{
+		pthread_mutex_lock(&data->mutex[MTX_MEALS]);
+		l_meal = philo[i].last_meal;
+		pthread_mutex_unlock(&data->mutex[MTX_MEALS]);
+		if (l_meal && ft_are_done(philo, data))
+		{
+			pthread_mutex_lock(&data->mutex[MTX_DONE]);
+			data->done = 1;
+			pthread_mutex_unlock(&data->mutex[MTX_DONE]);
+			break ;
+		}
+		if (l_meal && ((ft_gettime() - l_meal) > data->t_death))
+		{
+			ft_died(data);
+			ft_log(&philo[i], DIED);
+			break ;
+		}
+		i = ((i + 1) % data->n_philos);
+		usleep(200);
+	}
 	return (1);
+}
+
+int	ft_philosophize(t_philo *philo)
+{
+	int			i;
+
+	philo->data->th = malloc(sizeof(pthread_t) * philo->data->n_philos);
+	if (philo->data->th == NULL)
+		return (0);
+	i = -1;
+	while (++i < philo->data->n_philos)
+	{
+		if (pthread_create(&philo->data->th[i], 0, ft_start_philo, &philo[i]))
+		{
+			while (i--)
+				pthread_join(philo->data->th[i], NULL);
+			return (free(philo->data->th), 0);
+		}
+	}
+	if (ft_monitor(philo, philo->data, 0) != 1)
+		return (ft_kill_mtx(philo), free(philo->data->th), 0);
+	i = -1;
+	while (++i < philo->data->n_philos)
+		if (pthread_join(philo->data->th[i], NULL))
+			return (0);
+	return (ft_kill_mtx(philo), free(philo->data->th), 1);
+}
+
+void	*ft_start_philo(void *ref)
+{
+	t_philo	*philo;
+
+	philo = (t_philo *)ref;
+	if (philo->id % 2 == 0)
+	{
+		ft_log(philo, THINK);
+		usleep(philo->data->t_meal * 1000);
+	}
+	while (1)
+	{
+		if (ft_isdead(philo))
+			break ;
+		if (ft_eating(philo) != 1)
+			break ;
+		ft_log(philo, THINK);
+		usleep(philo->data->t_think * 1000);
+	}
+	return (NULL);
 }
 
 int	main(int argc, char **argv)
 {
-	t_var	var;
+	t_philo	*philos;
+	t_data	*data;
 
+	data = NULL;
+	philos = NULL;
 	if (argc != 5 && argc != 6)
-		return (printf("Error : Incorrect number of arguments"));
-	if (ft_atoi(argv[1]) < 1 || ft_atoi(argv[2]) < 1
-		|| ft_atoi(argv[3]) < 1 || ft_atoi(argv[4]) < 1)
-		return (printf("Error : Invalid arguments"));
-	if (argv[5])
-		if (ft_atoi(argv[5]) < 1)
-			return (printf("Error : Invalid arguments"));
-	if (init(&var, argc, argv))
-		return (printf("Error : Invalid arguments"));
-	if (thread(&var))
-		return (ft_free(&var, -2));
-	ft_free(&var, -2);
-	return (0);
+		return (printf("Error : Incorrect arguments"));
+	if (init(&philos, &data, argc, argv) != 1)
+		return (ft_free(philos, data, 0));
+	if (ft_philosophize(philos) != 1)
+		return (ft_free(philos, data, 0));
+	return (ft_free(philos, data, 1));
 }
