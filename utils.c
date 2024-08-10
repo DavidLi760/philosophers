@@ -28,20 +28,20 @@ int	ft_free(t_philo *philo, t_var *var, int ret)
 int	finished(t_philo *philo, t_var *var)
 {
 	int	i;
-	int	done;
+	int	end;
 	int	meals_count;
 
 	if (var->eat_count == -1)
 		return (0);
 	i = -1;
-	done = -1;
+	end = -1;
 	while (++i < var->nb)
 	{
-		pthread_mutex_lock(&philo->var->mutex[MTX_MEALS]);
+		pthread_mutex_lock(&philo->var->mutex[MEAL]);
 		meals_count = philo[i].meal_count;
-		pthread_mutex_unlock(&philo->var->mutex[MTX_MEALS]);
+		pthread_mutex_unlock(&philo->var->mutex[MEAL]);
 		if (meals_count >= var->eat_count)
-			if (++done == (var->nb - 1))
+			if (++end == (var->nb - 1))
 				return (1);
 		usleep(50);
 	}
@@ -50,14 +50,14 @@ int	finished(t_philo *philo, t_var *var)
 
 void	death(t_var *var)
 {
-	pthread_mutex_lock(&var->mutex[MTX_DIED]);
+	pthread_mutex_lock(&var->mutex[DEATH]);
 	var->died = 1;
-	pthread_mutex_unlock(&var->mutex[MTX_DIED]);
+	pthread_mutex_unlock(&var->mutex[DEATH]);
 }
 
-t_msec	get_time(void)
+long long	get_time(void)
 {
-	t_time	t;
+	struct timeval	t;
 
 	if (gettimeofday(&t, NULL) == -1)
 		return (0);
@@ -66,11 +66,11 @@ t_msec	get_time(void)
 
 void	print_status(t_philo *p, char *str)
 {
-	t_msec	time;
+	long long	time;
 
 	time = get_time() - p->var->start;
-	pthread_mutex_lock(&p->var->mutex[MTX_PRINTF]);
+	pthread_mutex_lock(&p->var->mutex[PRINT]);
 	if (((!is_dead(p)) && (!ending(p))) || (*str == 'd'))
-		printf("%3lld %3d %s\n", time, p->id, str);
-	pthread_mutex_unlock(&p->var->mutex[MTX_PRINTF]);
+		printf("%3lld %3d %s\n", time, p->num, str);
+	pthread_mutex_unlock(&p->var->mutex[PRINT]);
 }

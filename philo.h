@@ -26,62 +26,51 @@
 # define THINK "is thinking"
 # define DIED "died"
 
-
-typedef enum e_mutex
-{
-	MTX_PRINTF,
-	MTX_MEALS,
-	MTX_DONE,
-	MTX_DIED,
-	MTX_NUM
-}	t_mutexes;
-
-typedef long long		t_msec;
-typedef pthread_mutex_t	t_mutex;
-typedef struct timeval	t_time;
+# define PRINT 0
+# define MEAL 1
+# define END 2
+# define DEATH 3
 
 typedef struct s_var
 {
-	int			nb;
-	t_msec		t2d;
-	t_msec		t2e;
-	t_msec		t2s;
-	int			eat_count;
-	t_msec		start;
-	int			done;
-	int			died;
-	t_mutex		*mutex;
-	pthread_t	*thread;
+	int				nb;
+	long long		t2d;
+	long long		t2e;
+	long long		t2s;
+	int				eat_count;
+	long long		start;
+	int				end;
+	int				died;
+	pthread_mutex_t	*mutex;
+	pthread_t		*thread;
 }			t_var;
 
 typedef struct s_philo
 {
-	int			id;
-	t_msec		last_meal;
-	int			meal_count;
-	int			max;
-	int			min;
-	int			l_fork;
-	int			r_fork;
-	t_mutex		*fork;
-	t_var		*var;
+	int				num;
+	long long		last_meal;
+	int				meal_count;
+	int				max;
+	int				min;
+	int				left_fork;
+	int				right_fork;
+	pthread_mutex_t	*fork;
+	t_var			*var;
 }			t_philo;
 
-
-void	*routine(void *args);
-int		ft_free(t_philo *philo, t_var *var, int ret);
-int		is_dead(t_philo *philo);
-void	death(t_var *var);
-int		ending(t_philo *philo);
-int		finished(t_philo *philo, t_var *var);
-void	ft_done(t_var *var);
-void	mutex_destroyer(t_philo *philo);
-int		init(t_philo **philo, t_var **var, int argc, char **argv);
-long	ft_atol(char *str);
-t_msec	get_time(void);
-void	print_status(t_philo *philo, char *str);
-int		ft_eat(t_philo *p);
-int		take_fork(t_philo *p);
-int		ft_sleep(t_philo *p);
+void		*routine(void *args);
+int			ft_free(t_philo *philo, t_var *var, int ret);
+int			is_dead(t_philo *philo);
+void		death(t_var *var);
+int			ending(t_philo *philo);
+int			finished(t_philo *philo, t_var *var);
+void		mutex_destroyer(t_philo *philo);
+int			init(t_philo **philo, t_var **var, int argc, char **argv);
+long		ft_atol(char *str);
+long long	get_time(void);
+void		print_status(t_philo *philo, char *str);
+int			ft_eat(t_philo *p);
+int			take_fork(t_philo *p);
+int			ft_sleep(t_philo *p);
 
 #endif

@@ -14,25 +14,25 @@
 
 int	is_dead(t_philo *philo)
 {
-	pthread_mutex_lock(&philo->var->mutex[MTX_DIED]);
+	pthread_mutex_lock(&philo->var->mutex[DEATH]);
 	if (philo->var->died)
 	{
-		pthread_mutex_unlock(&philo->var->mutex[MTX_DIED]);
+		pthread_mutex_unlock(&philo->var->mutex[DEATH]);
 		return (1);
 	}
-	pthread_mutex_unlock(&philo->var->mutex[MTX_DIED]);
+	pthread_mutex_unlock(&philo->var->mutex[DEATH]);
 	return (0);
 }
 
 int	ending(t_philo *philo)
 {
-	pthread_mutex_lock(&philo->var->mutex[MTX_DONE]);
-	if (philo->var->done)
+	pthread_mutex_lock(&philo->var->mutex[END]);
+	if (philo->var->end)
 	{
-		pthread_mutex_unlock(&philo->var->mutex[MTX_DONE]);
+		pthread_mutex_unlock(&philo->var->mutex[END]);
 		return (1);
 	}
-	pthread_mutex_unlock(&philo->var->mutex[MTX_DONE]);
+	pthread_mutex_unlock(&philo->var->mutex[END]);
 	return (0);
 }
 
@@ -40,10 +40,10 @@ int	ft_eat(t_philo *p)
 {
 	if (take_fork(p) != 1)
 		return (0);
-	pthread_mutex_lock(&p->var->mutex[MTX_MEALS]);
+	pthread_mutex_lock(&p->var->mutex[MEAL]);
 	p->last_meal = get_time();
 	p->meal_count++;
-	pthread_mutex_unlock(&p->var->mutex[MTX_MEALS]);
+	pthread_mutex_unlock(&p->var->mutex[MEAL]);
 	if (ending(p))
 		return (ft_sleep(p), 0);
 	usleep(p->var->t2e * 1000);
@@ -53,17 +53,17 @@ int	ft_eat(t_philo *p)
 
 int	take_fork(t_philo *p)
 {
-	if (p->r_fork > p->l_fork)
-		p->max = p->r_fork;
+	if (p->right_fork > p->left_fork)
+		p->max = p->right_fork;
 	else
-		p->max = p->l_fork;
-	if (p->r_fork < p->l_fork)
-		p->min = p->r_fork;
+		p->max = p->left_fork;
+	if (p->right_fork < p->left_fork)
+		p->min = p->right_fork;
 	else
-		p->min = p->l_fork;
+		p->min = p->left_fork;
 	pthread_mutex_lock(&p->fork[p->min]);
 	print_status(p, FORK);
-	if (p->l_fork == p->r_fork)
+	if (p->left_fork == p->right_fork)
 	{
 		pthread_mutex_unlock(&p->fork[p->min]);
 		return (0);
@@ -76,14 +76,14 @@ int	take_fork(t_philo *p)
 
 int	ft_sleep(t_philo *p)
 {
-	if (p->r_fork > p->l_fork)
-		p->max = p->r_fork;
+	if (p->right_fork > p->left_fork)
+		p->max = p->right_fork;
 	else
-		p->max = p->l_fork;
-	if (p->r_fork < p->l_fork)
-		p->min = p->r_fork;
+		p->max = p->left_fork;
+	if (p->right_fork < p->left_fork)
+		p->min = p->right_fork;
 	else
-		p->min = p->l_fork;
+		p->min = p->left_fork;
 	print_status(p, SLEEP);
 	pthread_mutex_unlock(&p->fork[p->max]);
 	pthread_mutex_unlock(&p->fork[p->min]);

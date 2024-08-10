@@ -20,24 +20,24 @@ void	mutex_destroyer(t_philo *philo)
 	while (i < philo->var->nb)
 		pthread_mutex_destroy(&philo->fork[i++]);
 	i = 0;
-	while (i < MTX_NUM)
+	while (i < 4)
 		pthread_mutex_destroy(&philo->var->mutex[i++]);
 }
 
 int	manage_mutex(t_philo *philo, t_var *var, int i)
 {
-	t_msec			l_meal;
+	long long			l_meal;
 
 	while (1)
 	{
-		pthread_mutex_lock(&var->mutex[MTX_MEALS]);
+		pthread_mutex_lock(&var->mutex[MEAL]);
 		l_meal = philo[i].last_meal;
-		pthread_mutex_unlock(&var->mutex[MTX_MEALS]);
+		pthread_mutex_unlock(&var->mutex[MEAL]);
 		if (l_meal && finished(philo, var))
 		{
-			pthread_mutex_lock(&var->mutex[MTX_DONE]);
-			var->done = 1;
-			pthread_mutex_unlock(&var->mutex[MTX_DONE]);
+			pthread_mutex_lock(&var->mutex[END]);
+			var->end = 1;
+			pthread_mutex_unlock(&var->mutex[END]);
 			break ;
 		}
 		if (l_meal && ((get_time() - l_meal) > var->t2d))
@@ -83,7 +83,7 @@ void	*routine(void *p)
 	t_philo	*philo;
 
 	philo = (t_philo *)p;
-	if (philo->id % 2 == 0)
+	if (philo->num % 2 == 0)
 	{
 		print_status(philo, THINK);
 		usleep(philo->var->t2e * 1000);

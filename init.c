@@ -40,10 +40,10 @@ long	ft_atol(char *str)
 
 int	init_thread(t_philo **philo, t_var *var)
 {
-	t_mutex	*fork;
-	int		i;
+	pthread_mutex_t	*fork;
+	int				i;
 
-	fork = malloc(sizeof(t_mutex) * var->nb);
+	fork = malloc(sizeof(pthread_mutex_t) * var->nb);
 	if (!fork)
 		return (0);
 	i = 0;
@@ -52,14 +52,14 @@ int	init_thread(t_philo **philo, t_var *var)
 	i = 0;
 	while (i < var->nb)
 	{
-		(*philo)[i].id = (i + 1);
+		(*philo)[i].num = (i + 1);
 		(*philo)[i].last_meal = var->start;
 		(*philo)[i].meal_count = 0;
-		(*philo)[i].l_fork = i;
+		(*philo)[i].left_fork = i;
 		if ((i - 1) < 0)
-			(*philo)[i].r_fork = (var->nb - 1);
+			(*philo)[i].right_fork = (var->nb - 1);
 		else
-			(*philo)[i].r_fork = (i - 1);
+			(*philo)[i].right_fork = (i - 1);
 		(*philo)[i].fork = fork;
 		(*philo)[i].var = var;
 		++i;
@@ -69,14 +69,14 @@ int	init_thread(t_philo **philo, t_var *var)
 
 int	init_mutex(t_var **var)
 {
-	t_mutex	*mutex;
-	int		i;
+	pthread_mutex_t	*mutex;
+	int				i;
 
-	mutex = malloc(sizeof(t_mutex) * MTX_NUM);
+	mutex = malloc(sizeof(pthread_mutex_t) * 4);
 	if (mutex == NULL)
 		return (0);
 	i = 0;
-	while (i < MTX_NUM)
+	while (i < 4)
 		pthread_mutex_init(&mutex[i++], NULL);
 	(*var)->mutex = mutex;
 	return (1);
@@ -92,7 +92,7 @@ int	init_var(t_var **var, int argc, char **argv)
 	(*var)->eat_count = 100;
 	if (argc == 6)
 		(*var)->eat_count = ft_atol(argv[5]);
-	(*var)->done = 0;
+	(*var)->end = 0;
 	(*var)->died = 0;
 	if (!init_mutex(var))
 		return (0);
