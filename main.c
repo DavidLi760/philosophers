@@ -12,106 +12,105 @@
 
 #include "philo.h"
 
-void	ft_kill_mtx(t_philo *philo)
+void	mutex_destroyer(t_philo *philo)
 {
 	int	i;
 
 	i = 0;
-	while (i < philo->data->n_philos)
+	while (i < philo->var->nb)
 		pthread_mutex_destroy(&philo->fork[i++]);
 	i = 0;
 	while (i < MTX_NUM)
-		pthread_mutex_destroy(&philo->data->mutex[i++]);
+		pthread_mutex_destroy(&philo->var->mutex[i++]);
 }
 
-int	ft_monitor(t_philo *philo, t_data *data, int i)
+int	manage_mutex(t_philo *philo, t_var *var, int i)
 {
 	t_msec			l_meal;
 
 	while (1)
 	{
-		pthread_mutex_lock(&data->mutex[MTX_MEALS]);
+		pthread_mutex_lock(&var->mutex[MTX_MEALS]);
 		l_meal = philo[i].last_meal;
-		pthread_mutex_unlock(&data->mutex[MTX_MEALS]);
-		if (l_meal && ft_are_done(philo, data))
+		pthread_mutex_unlock(&var->mutex[MTX_MEALS]);
+		if (l_meal && finished(philo, var))
 		{
-			pthread_mutex_lock(&data->mutex[MTX_DONE]);
-			data->done = 1;
-			pthread_mutex_unlock(&data->mutex[MTX_DONE]);
+			pthread_mutex_lock(&var->mutex[MTX_DONE]);
+			var->done = 1;
+			pthread_mutex_unlock(&var->mutex[MTX_DONE]);
 			break ;
 		}
-		if (l_meal && ((ft_gettime() - l_meal) > data->t_death))
+		if (l_meal && ((get_time() - l_meal) > var->t2d))
 		{
-			ft_died(data);
-			ft_log(&philo[i], DIED);
+			death(var);
+			print_status(&philo[i], DIED);
 			break ;
 		}
-		i = ((i + 1) % data->n_philos);
+		i = ((i + 1) % var->nb);
 		usleep(200);
 	}
 	return (1);
 }
 
-int	ft_philosophize(t_philo *philo)
+int	create_thread(t_philo *philo)
 {
 	int			i;
 
-	philo->data->th = malloc(sizeof(pthread_t) * philo->data->n_philos);
-	if (philo->data->th == NULL)
+	philo->var->thread = malloc(sizeof(pthread_t) * philo->var->nb);
+	if (philo->var->thread == NULL)
 		return (0);
 	i = -1;
-	while (++i < philo->data->n_philos)
+	while (++i < philo->var->nb)
 	{
-		if (pthread_create(&philo->data->th[i], 0, ft_start_philo, &philo[i]))
+		if (pthread_create(&philo->var->thread[i], 0, routine, &philo[i]))
 		{
 			while (i--)
-				pthread_join(philo->data->th[i], NULL);
-			return (free(philo->data->th), 0);
+				pthread_join(philo->var->thread[i], NULL);
+			return (free(philo->var->thread), 0);
 		}
 	}
-	if (ft_monitor(philo, philo->data, 0) != 1)
-		return (ft_kill_mtx(philo), free(philo->data->th), 0);
+	if (manage_mutex(philo, philo->var, 0) != 1)
+		return (mutex_destroyer(philo), free(philo->var->thread), 0);
 	i = -1;
-	while (++i < philo->data->n_philos)
-		if (pthread_join(philo->data->th[i], NULL))
+	while (++i < philo->var->nb)
+		if (pthread_join(philo->var->thread[i], NULL))
 			return (0);
-	return (ft_kill_mtx(philo), free(philo->data->th), 1);
+	return (mutex_destroyer(philo), free(philo->var->thread), 1);
 }
 
-void	*ft_start_philo(void *ref)
+void	*routine(void *p)
 {
 	t_philo	*philo;
 
-	philo = (t_philo *)ref;
+	philo = (t_philo *)p;
 	if (philo->id % 2 == 0)
 	{
-		ft_log(philo, THINK);
-		usleep(philo->data->t_meal * 1000);
+		print_status(philo, THINK);
+		usleep(philo->var->t2e * 1000);
 	}
 	while (1)
 	{
-		if (ft_isdead(philo))
+		if (is_dead(philo))
 			break ;
-		if (ft_eating(philo) != 1)
+		if (ft_eat(philo) != 1)
 			break ;
-		ft_log(philo, THINK);
-		usleep(philo->data->t_think * 1000);
+		print_status(philo, THINK);
 	}
 	return (NULL);
 }
 
 int	main(int argc, char **argv)
 {
-	t_philo	*philos;
-	t_data	*data;
+	t_philo	*philo;
+	t_var	*var;
 
-	data = NULL;
-	philos = NULL;
+	var = NULL;
+	philo = NULL;
 	if (argc != 5 && argc != 6)
 		return (printf("Error : Incorrect arguments"));
-	if (init(&philos, &data, argc, argv) != 1)
-		return (ft_free(philos, data, 0));
-	if (ft_philosophize(philos) != 1)
-		return (ft_free(philos, data, 0));
-	return (ft_free(philos, data, 1));
+	if (init(&philo, &var, argc, argv) != 1)
+		return (ft_free(philo, var, 0));
+	if (create_thread(philo) != 1)
+		return (ft_free(philo, var, 0));
+	return (ft_free(philo, var, 1));
 }

@@ -12,12 +12,12 @@
 
 #include "philo.h"
 
-int	ft_free(t_philo *philo, t_data *data, int ret)
+int	ft_free(t_philo *philo, t_var *var, int ret)
 {
-	if (data && data->mutex)
-		free(data->mutex);
-	if (data)
-		free(data);
+	if (var && var->mutex)
+		free(var->mutex);
+	if (var)
+		free(var);
 	if (philo && philo->fork)
 		free(philo->fork);
 	if (philo)
@@ -25,29 +25,37 @@ int	ft_free(t_philo *philo, t_data *data, int ret)
 	return (ret);
 }
 
-int	ft_eating(t_philo *p)
+int	finished(t_philo *philo, t_var *var)
 {
-	if (ft_getforks(p) != 1)
+	int	i;
+	int	done;
+	int	meals_count;
+
+	if (var->eat_count == -1)
 		return (0);
-	pthread_mutex_lock(&p->data->mutex[MTX_MEALS]);
-	p->last_meal = ft_gettime();
-	p->meal_count++;
-	pthread_mutex_unlock(&p->data->mutex[MTX_MEALS]);
-	if (ft_isdone(p))
-		return (ft_dropforks(p), 0);
-	usleep(p->data->t_meal * 1000);
-	ft_dropforks(p);
-	return (1);
+	i = -1;
+	done = -1;
+	while (++i < var->nb)
+	{
+		pthread_mutex_lock(&philo->var->mutex[MTX_MEALS]);
+		meals_count = philo[i].meal_count;
+		pthread_mutex_unlock(&philo->var->mutex[MTX_MEALS]);
+		if (meals_count >= var->eat_count)
+			if (++done == (var->nb - 1))
+				return (1);
+		usleep(50);
+	}
+	return (0);
 }
 
-void	ft_died(t_data *data)
+void	death(t_var *var)
 {
-	pthread_mutex_lock(&data->mutex[MTX_DIED]);
-	data->died = 1;
-	pthread_mutex_unlock(&data->mutex[MTX_DIED]);
+	pthread_mutex_lock(&var->mutex[MTX_DIED]);
+	var->died = 1;
+	pthread_mutex_unlock(&var->mutex[MTX_DIED]);
 }
 
-t_msec	ft_gettime(void)
+t_msec	get_time(void)
 {
 	t_time	t;
 
@@ -56,13 +64,13 @@ t_msec	ft_gettime(void)
 	return ((t.tv_sec * 1000) + (t.tv_usec / 1000));
 }
 
-void	ft_log(t_philo *p, char *str)
+void	print_status(t_philo *p, char *str)
 {
 	t_msec	time;
 
-	time = ft_gettime() - p->data->t_start;
-	pthread_mutex_lock(&p->data->mutex[MTX_PRINTF]);
-	if (((!ft_isdead(p)) && (!ft_isdone(p))) || (*str == 'd'))
+	time = get_time() - p->var->start;
+	pthread_mutex_lock(&p->var->mutex[MTX_PRINTF]);
+	if (((!is_dead(p)) && (!ending(p))) || (*str == 'd'))
 		printf("%3lld %3d %s\n", time, p->id, str);
-	pthread_mutex_unlock(&p->data->mutex[MTX_PRINTF]);
+	pthread_mutex_unlock(&p->var->mutex[MTX_PRINTF]);
 }
