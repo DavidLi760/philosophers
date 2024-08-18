@@ -95,7 +95,7 @@ void	*routine(void *p)
 		if (ft_eat(philo) != 1)
 			break ;
 		print_status(philo, THINK);
-		usleep(philo->var->t2t * 1000);
+		usleep(500);
 	}
 	return (NULL);
 }

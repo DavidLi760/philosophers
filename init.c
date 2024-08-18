@@ -89,10 +89,7 @@ int	init_var(t_var **var, int argc, char **argv)
 	(*var)->t2d = ft_atol(argv[2]);
 	(*var)->t2e = ft_atol(argv[3]);
 	(*var)->t2s = ft_atol(argv[4]);
-	(*var)->t2t = 0;
 	(*var)->eat_count = -1;
-	if ((*var)->nb % 2)
-		(*var)->t2t = ((*var)->t2d - ((*var)->t2s + (*var)->t2e)) / 2;
 	if (argc == 6)
 		(*var)->eat_count = ft_atol(argv[5]);
 	(*var)->end = 0;
