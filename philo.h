@@ -37,6 +37,7 @@ typedef struct s_var
 	long long		t2d;
 	long long		t2e;
 	long long		t2s;
+	long long		t2t;
 	int				eat_count;
 	long long		start;
 	int				end;

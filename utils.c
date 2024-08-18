@@ -70,7 +70,7 @@ void	print_status(t_philo *p, char *str)
 
 	time = get_time() - p->var->start;
 	pthread_mutex_lock(&p->var->mutex[PRINT]);
-	if (((!is_dead(p)) && (!ending(p))))
+	if (((!is_dead(p)) && (!ending(p))) || (*str == 'd'))
 		printf("%3lld %3d %s\n", time, p->num, str);
 	pthread_mutex_unlock(&p->var->mutex[PRINT]);
 }

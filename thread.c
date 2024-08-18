@@ -85,8 +85,8 @@ int	ft_sleep(t_philo *p)
 	else
 		p->min = p->left_fork;
 	print_status(p, SLEEP);
-	pthread_mutex_unlock(&p->fork[p->max]);
 	pthread_mutex_unlock(&p->fork[p->min]);
+	pthread_mutex_unlock(&p->fork[p->max]);
 	usleep(p->var->t2s * 1000);
 	return (1);
 }
